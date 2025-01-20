@@ -139,7 +139,7 @@ class TestOrder(NodeVisitor):
             tree = parse(source.read_text(), source.name)
             cls(Hierarchy(test_id.split("::")[0])).visit(tree)
         print("Cache contents after visiting function definitions:")
-        for key, value in self._cache.items():
+        for key, value in cls._cache.items():
             print(f"{key}: {value}")
         return cls._cache[normalized_test_id].lineno
 
