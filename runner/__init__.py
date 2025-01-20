@@ -45,6 +45,7 @@ class ResultsReporter:
         def _sort_by_lineno(item):
             test_id = Hierarchy(item.nodeid)
             source = Path(item.fspath)
+            print(f"test_id: {test_id}")
             return TestOrder.lineno(test_id, source)
 
         items.sort(key=_sort_by_lineno)

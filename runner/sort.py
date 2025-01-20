@@ -91,6 +91,7 @@ class TestOrder(NodeVisitor):
         if test_id not in cls._cache:
             tree = parse(source.read_text(), source.name)
             cls(Hierarchy(test_id.split("::")[0])).visit(tree)
+        print(f"cls._cache: {cls._cache}")
         return cls._cache[test_id].lineno
 
 
