@@ -87,20 +87,17 @@ class TestOrder(NodeVisitor):
         """
         return Hierarchy("::".join(self._hierarchy + [name]))
 
-    def _add_parameterized_variants(self, node, base_test_id: Hierarchy,
-                                    testinfo: TestInfo):
+    def _add_parameterized_variants(self, node, base_test_id: str, testinfo: TestInfo):
         """
         Checks for pytest.mark.parametrize decorators and adds
-        parameterized variants.
+        parameterized variants to the cache.
         """
         for decorator in node.decorator_list:
-            if isinstance(decorator, ast.Call) and isinstance(decorator.func,
-                                                              ast.Attribute):
+            if isinstance(decorator, ast.Call) and isinstance(decorator.func, ast.Attribute):
                 root_name = self._get_root_name(decorator.func)
-                if (root_name == "pytest" and
-                        decorator.func.attr == "mark.parametrize"):
+                if root_name == "pytest" and decorator.func.attr == "mark.parametrize":
                     variants = self._extract_parameters(decorator)
-                    for i, variant in enumerate(variants):
+                    for variant in variants:
                         # Generate a parameterized test ID
                         parameterized_test_id = f"{base_test_id}[{variant}]"
                         self._cache[parameterized_test_id] = testinfo
@@ -129,6 +126,7 @@ class TestOrder(NodeVisitor):
             return [ast.unparse(value) for value in param_values.elts]
         return []
 
+
     @classmethod
     def lineno(cls, test_id: Hierarchy, source: Path) -> int:
         """
@@ -140,7 +138,9 @@ class TestOrder(NodeVisitor):
         if normalized_test_id not in cls._cache:
             tree = parse(source.read_text(), source.name)
             cls(Hierarchy(test_id.split("::")[0])).visit(tree)
-        print(f"cls._cache: {cls._cache}")
+        print("Cache contents after visiting function definitions:")
+        for key, value in self._cache.items():
+            print(f"{key}: {value}")
         return cls._cache[normalized_test_id].lineno
 
     @staticmethod
