@@ -12,6 +12,7 @@ from ast import (
     With,
     If
 )
+import ast
 from pathlib import Path
 from typing import Dict, overload
 
@@ -60,7 +61,11 @@ class TestOrder(NodeVisitor):
                 last_body = last_body.body[-1]
 
             testinfo = TestInfo(node.lineno, last_body.lineno, 1)
-            self._cache[self.get_hierarchy(Hierarchy(node.name))] = testinfo
+            base_test_id = self.get_hierarchy(Hierarchy(node.name))
+            self._cache[base_test_id] = testinfo
+
+            # Add entries for parameterized variants if needed
+            self._add_parameterized_variants(node, base_test_id, testinfo)
 
         self.generic_visit(node)
 
@@ -82,6 +87,33 @@ class TestOrder(NodeVisitor):
         """
         return Hierarchy("::".join(self._hierarchy + [name]))
 
+    def _add_parameterized_variants(self, node, base_test_id: Hierarchy,
+                                    testinfo: TestInfo):
+        """
+        Checks for pytest.mark.parametrize decorators and adds
+        parameterized variants.
+        """
+        for decorator in node.decorator_list:
+            if (decorator.func.value.id == "pytest" and 
+                    decorator.func.attr == "mark.parametrize"):
+                variants = self._extract_parameters(decorator)
+                for i, variant in enumerate(variants):
+                    # Generate a parameterized test ID
+                    parameterized_test_id = f"{base_test_id}[{variant}]"
+                    self._cache[parameterized_test_id] = testinfo
+
+    def _extract_parameters(self, decorator: ast.Call) -> List[str]:
+        """
+        Extracts parameterized values from the pytest.mark.parametrize
+        decorator.
+        """
+        if len(decorator.args) < 2:
+            return []
+
+        param_values = decorator.args[1]
+        if isinstance(param_values, ast.List):
+            return [ast.unparse(value) for value in param_values.elts]
+        return []
 
     @classmethod
     def lineno(cls, test_id: Hierarchy, source: Path) -> int:
