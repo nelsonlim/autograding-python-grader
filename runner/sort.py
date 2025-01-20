@@ -102,7 +102,7 @@ class TestOrder(NodeVisitor):
                     parameterized_test_id = f"{base_test_id}[{variant}]"
                     self._cache[parameterized_test_id] = testinfo
 
-    def _extract_parameters(self, decorator: ast.Call) -> List[str]:
+    def _extract_parameters(self, decorator: ast.Call) -> list[str]:
         """
         Extracts parameterized values from the pytest.mark.parametrize
         decorator.
