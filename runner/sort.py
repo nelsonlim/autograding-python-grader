@@ -88,12 +88,23 @@ class TestOrder(NodeVisitor):
         """
         Returns the line that the given test was defined on.
         """
-        if test_id not in cls._cache:
+        # Normalize test ID for parameterized tests
+        normalized_test_id = cls._normalize_test_id(test_id)
+
+        if normalized_test_id not in cls._cache:
             tree = parse(source.read_text(), source.name)
             cls(Hierarchy(test_id.split("::")[0])).visit(tree)
         print(f"cls._cache: {cls._cache}")
-        return cls._cache[test_id].lineno
+        return cls._cache[normalized_test_id].lineno
 
+    @staticmethod
+    def _normalize_test_id(test_id: Hierarchy) -> Hierarchy:
+        """
+        Removes parameterized suffixes from the test ID.
+        """
+        if "[" in test_id:
+            return test_id.split("[")[0]
+        return test_id
 
     @classmethod
     def function_source(cls, test_id: Hierarchy, source: Path) -> str:
