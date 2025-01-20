@@ -94,13 +94,27 @@ class TestOrder(NodeVisitor):
         parameterized variants.
         """
         for decorator in node.decorator_list:
-            if (decorator.func.value.id == "pytest" and 
-                    decorator.func.attr == "mark.parametrize"):
-                variants = self._extract_parameters(decorator)
-                for i, variant in enumerate(variants):
-                    # Generate a parameterized test ID
-                    parameterized_test_id = f"{base_test_id}[{variant}]"
-                    self._cache[parameterized_test_id] = testinfo
+            if isinstance(decorator, ast.Call) and isinstance(decorator.func,
+                                                              ast.Attribute):
+                root_name = self._get_root_name(decorator.func)
+                if (root_name == "pytest" and
+                        decorator.func.attr == "mark.parametrize"):
+                    variants = self._extract_parameters(decorator)
+                    for i, variant in enumerate(variants):
+                        # Generate a parameterized test ID
+                        parameterized_test_id = f"{base_test_id}[{variant}]"
+                        self._cache[parameterized_test_id] = testinfo
+
+    def _get_root_name(self, attr: ast.Attribute) -> str:
+        """
+        Recursively resolves the root name of an attribute chain.
+        Example: pytest.mark.parametrize -> pytest
+        """
+        if isinstance(attr, ast.Attribute):
+            return self._get_root_name(attr.value)
+        if isinstance(attr, ast.Name):
+            return attr.id
+        return ""
 
     def _extract_parameters(self, decorator: ast.Call) -> list[str]:
         """
